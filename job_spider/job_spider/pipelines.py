@@ -9,7 +9,16 @@
 import csv
 import datetime
 from scrapy.exporters import CsvItemExporter
+import pytz
+from datetime import datetime, date
+utc_now = datetime.now(pytz.utc)
+utc8 = pytz.timezone('Asia/Taipei')
 
+# 轉換為 UTC+8 時間
+utc8_now = utc_now.astimezone(utc8)
+
+# 提取日期部分
+utc8_date = utc8_now.date()
 class JobSpiderPipeline:
     def open_spider(self, spider):
         self.f = open("./meet_job_scrapy.csv", mode='a', encoding='utf-8')
@@ -29,7 +38,7 @@ class JobSpiderPipeline:
 
 class CsvPipeline:
     def __init__(self):
-        self.file = open(f'meet_job_{str(datetime.date.today())}.csv', 'wb')
+        self.file = open(f'meet_job_{str(utc8_date)}.csv', 'wb')
         self.exporter = CsvItemExporter(self.file, encoding='utf-8')
         self.exporter.start_exporting()
 
@@ -50,7 +59,7 @@ class SqliteNoDuplicatesPipeline:
     def __init__(self):
 
         ## Create/Connect to database
-        self.con = sqlite3.connect(f'meet_job_spider_{str(datetime.date.today())}.db')
+        self.con = sqlite3.connect(f'meet_job_spider_{utc8_date}.db')
 
         ## Create cursor, used to execute commands
         self.cur = self.con.cursor()
@@ -67,7 +76,8 @@ class SqliteNoDuplicatesPipeline:
             salary_length TEXT,
             skill_cata_tag TEXT,
             job_description TEXT,
-            link TEXT
+            link TEXT,
+            create_date_utc8 TEXT
         )
         """)
 
@@ -86,7 +96,7 @@ class SqliteNoDuplicatesPipeline:
 
             ## Define insert statement
             self.cur.execute("""
-                INSERT INTO quotes (job_title, job_tag, company_name, salary_max, salary_min, salary_currency, salary_length, skill_cata_tag, job_description, link) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                INSERT INTO quotes (job_title, job_tag, company_name, salary_max, salary_min, salary_currency, salary_length, skill_cata_tag, job_description, link, create_date_utc8) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?) 
             """,
                              (
                                  item['job_title'],
@@ -98,7 +108,9 @@ class SqliteNoDuplicatesPipeline:
                                  item['salary_length'],
                                  item['skill_cata_tag'],
                                  item['jd'],
-                                 item['url']
+                                 item['url'],
+                                 utc8_date
+
                              )
             )
 
