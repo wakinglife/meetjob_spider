@@ -140,8 +140,15 @@ class MeetJobSpider(scrapy.Spider):
         jobtitle = response.xpath("//h1/text()").getall()[0].split('｜')[0]
         print(jobtitle)
         try:
-            job_title = jobtitle.split('-')[0].strip()
-            company_name = jobtitle.split('-')[1].strip()
+            job_title = ""
+            for i in range(len(jobtitle.split('-'))):
+                if i == 0:
+                    job_title = jobtitle.split('-')[0].strip()
+                elif i == len(jobtitle.split('-')) -1:
+                    continue
+                else:
+                    job_title = job_title + "-" + jobtitle.split('-')[i].strip()
+            company_name = jobtitle.split('-')[-1].strip()
         except:
             company_name = jobtitle.strip()
         try:

@@ -66,7 +66,8 @@ CONCURRENT_REQUESTS = 32
 
 ITEM_PIPELINES = {
     #"job_spider.pipelines.JobSpiderPipeline": 300,
-    "job_spider.pipelines.CsvPipeline": 200
+    "job_spider.pipelines.CsvPipeline": 200,
+    "job_spider.pipelines.SqliteNoDuplicatesPipeline": 200
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
