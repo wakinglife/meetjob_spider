@@ -16,14 +16,14 @@ class JobSpiderPipeline:
         csv.writer(self.f, delimiter='*')
         # salary_min是提供的薪資
         self.f.write(
-            "'job_tag','title', 'company_name', 'salary_min', 'skills', 'description', 'link'")
+            "'job_tag','title', 'company_name', 'salary_min', 'salary_max', 'salary_currency', 'salary_length', 'skills', 'job_description', 'link'")
 
     def close_spider(self, spider):
         if self.f:
             self.f.close()
 
     def process_item(self, item, spider):
-        self.f.write(f"{item['job_tag']}*{item['job_title']}*{item['company_name']}*{item['salary']}*{item['skill_cata_tag']}*{item['url']}")
+        self.f.write(f"{item['job_tag']}*{item['job_title']}*{item['company_name']}*{item['salary_min']}*{item['salary_max']}*{item['salary_currency']}*{item['salary_length']}*{item['skill_cata_tag']}*{item['jd']}*{item['url']}")
         return item
 
 

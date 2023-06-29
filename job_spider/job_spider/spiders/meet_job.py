@@ -1,5 +1,58 @@
 import scrapy
 from job_spider.items import JobSpiderItem
+import re
+
+def convert_to_number(value, unit):
+    if unit == 'k':
+        return value * 1000
+    elif unit == 'm':
+        return value * 1000000
+    else:
+        return value
+
+
+def extract_salary_details(data):
+    # 尋找數字和單位的模式
+    pattern = r'([\d.]+)\s?(k|m)?'
+
+    # 提取薪資數字和單位
+    matches = re.findall(pattern, data)
+
+    if not matches:
+        return None
+
+    # 將匹配到的數字轉換為浮點數
+    values = [float(match[0]) for match in matches]
+
+    # 提取單位和時間
+    unit = matches[0][1] if matches[0][1] else 'k'
+    time = 'Monthly' if 'month' in data.lower() else 'Annually'
+
+    # 處理上限和下限
+    if len(values) == 2:
+        minimum = convert_to_number(min(values), unit)
+        maximum = convert_to_number(max(values), unit)
+    elif len(values) == 1:
+        minimum = convert_to_number(values[0], unit)
+        maximum = None
+    else:
+        return None
+
+    # 提取幣別
+    currency = re.findall(r'[A-Z]+', data)
+    if currency:
+        currency = currency[0]
+    else:
+        currency = None
+
+    return {
+        'minimum': minimum,
+        'maximum': maximum,
+        'currency': currency,
+        'unit': unit.upper(),
+        'salary_period': time
+    }
+
 
 class MeetJobSpider(scrapy.Spider):
 
@@ -78,6 +131,7 @@ class MeetJobSpider(scrapy.Spider):
             else:
                 print("finish crawling")
 
+
     def parse_get_detail_job(self, response):
         # 公司、職缺
         job_package = JobSpiderItem()
@@ -95,23 +149,27 @@ class MeetJobSpider(scrapy.Spider):
         except:
             salary = 'unknown'
         skill_cata_tag = response.xpath("//div[@class='job-intro block']//div[@class='tag-box smallest-text']/text()").getall()
-        skill_cata_tag = self.data_cleaning(skill_cata_tag)
+        skill_cata_tag = self.data_cleaning(skill_cata_tag, separater=",")
         jd = response.xpath("//div[@class='from-editor']//p/text()").getall()
         jd = self.data_cleaning(jd)
         job_package['job_title'] = job_title
         job_package['company_name'] = company_name
-        job_package['salary'] = salary
+        salary_config = extract_salary_details(salary)
+        job_package['salary_min'] = salary_config['minimum']
+        job_package['salary_max'] = salary_config['maximum']
+        job_package['salary_currency'] = salary_config['currency']
+        job_package['salary_length'] = salary_config['salary_period']
         job_package['skill_cata_tag'] = skill_cata_tag
         job_package['jd'] = jd
         job_package['url'] = response.url
         yield job_package
 
-    def data_cleaning(self, list_of_item):
+    def data_cleaning(self, list_of_item, separater="|||"):
         output = ''
         for item in list_of_item:
             if output == '':
                 output = item
             elif item.strip() != '':
-                output = output + '|||' + item.strip()
+                output = output + separater + item.strip()
         return output.replace(u'\xa0', u'')
 
